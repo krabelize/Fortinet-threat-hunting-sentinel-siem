@@ -1,0 +1,25 @@
+//Possible successful brute-force attack on Fortinet NGFW management login
+let failureCountThreshold = 2;
+let successCountThreshold = 1;
+//Fortinet FortiAnalayzer admin failed login
+CommonSecurityLog
+| where DeviceVendor has "Fortinet"
+| where DeviceEventClassID in ('0100032001','0100032002','0100032003','0110032004','0105032005','0105032006','0105032007','0105032021','0105032024','0105032053','0100032054','0105032061','0105032070')
+// Additional information to fields
+| parse kind = regex flags=Ui AdditionalExtensions with * @"ad.deviceSeverity=" SeverityLevel ";"
+| parse kind = regex flags=Ui AdditionalExtensions with * @"ad.method=" Application ";"
+| parse kind = regex flags=Ui AdditionalExtensions with * @"ad.status=" EventStatus ";"
+| parse kind = regex flags=Ui AdditionalExtensions with * @"ad.logdesc=" EventResultDetails ";"
+| parse kind = regex flags=Ui AdditionalExtensions with * @"reason=" Reason ";"
+| summarize
+//Successful brute-force logic
+StartTime =  min(TimeGenerated), 
+EndTime =  min(TimeGenerated), 
+ReportedBy = make_set (strcat (DeviceName), 100),
+FailureCount = countif(EventResultDetails=='Admin login failed'),
+SuccessCount = countif(EventResultDetails=='Admin login successful')
+by 
+DeviceName, SourceIP, DestinationUserName, bin(TimeGenerated,12h)
+| where FailureCount >= failureCountThreshold and SuccessCount >= successCountThreshold
+| extend
+ReportedBy = strcat_array(ReportedBy, ", ")
