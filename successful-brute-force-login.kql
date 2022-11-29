@@ -1,5 +1,5 @@
 //Possible successful brute-force attack on Fortinet NGFW management login
-let failureCountThreshold = 2;
+let failureCountThreshold = 10;
 let successCountThreshold = 1;
 //Fortinet FortiAnalayzer admin failed login
 CommonSecurityLog
